@@ -188,9 +188,11 @@ void PCAPUDPSource_impl::runThread() {
       timeval diff;
       timersub(&header.ts, &tv, &diff);
       tv = header.ts;
-      const double delay = diff.tv_sec * 1000000 + diff.tv_usec;
-      if (delay > 0.0)
-        usleep(delay);
+
+      unsigned int delay_as_micro = (unsigned int)(0.8*(diff.tv_sec*1000000 + diff.tv_usec)); // (diff.tv_sec + diff.tv_usec / 1e6)*1e6;
+
+      if (delay_as_micro > 0)
+        usleep(delay_as_micro);
 
       uint16_t destPort = ntohs(udp->dest);
 
@@ -209,10 +211,11 @@ void PCAPUDPSource_impl::runThread() {
         }
       }
 
+
       // Monitor that we don't get too backed up.
       while (!stopThread && netDataAvailable() > maxQueueSize) {
         // Just in case we're running fast, let the system catch up.
-        usleep(100);
+        usleep(20);
       }
 
       if (stopThread)
@@ -225,9 +228,9 @@ void PCAPUDPSource_impl::runThread() {
                 << std::endl;
     }
 
-    while (!stopThread && netDataAvailable() > d_payloadsize) {
+    while (!stopThread && netDataAvailable() > 3*d_payloadsize) {
       // Just in case we're running fast, let the system catch up.
-      usleep(1000);
+      usleep(20);
     }
 
     // end if we're not repeating.
